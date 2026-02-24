@@ -16,6 +16,7 @@ import { Role } from 'generated/prisma/enums';
 import { RolesGuard } from 'src/auth/guards/role.guard';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { InviteUserDTO } from './dto/invite-user.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -24,10 +25,19 @@ export class UsersController {
 
   //create user
 
-  @ApiOperation({ summary: 'User registration' })
-  @Post('/signup')
-  async createUser(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createUser(createUserDto);
+  // @ApiOperation({ summary: 'User registration' })
+  // @Post('/signup')
+  // async createUser(@Body() createUserDto: CreateUserDto) {
+  //   return this.usersService.createUser(createUserDto);
+  // }
+
+  //invite user (SHOP_KEEPER or STOCK_MANAGER)
+  @ApiOperation({ summary: 'Invite a new user (SHOP_KEEPER or STOCK_MANAGER)' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.OWNER)
+  @Post('/invite')
+  async inviteUser(@Body() inviteUserDto: InviteUserDTO) {
+    return this.usersService.inviteUser(inviteUserDto);
   }
 
   //get all users
