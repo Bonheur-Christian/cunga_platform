@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String           @id(map: "User_pkey") @default(uuid())
+  name            String
+  email           String           @unique(map: "User_email_key")
+  password        String
+  role            Role
+  createdAt       DateTime         @default(now())
+  productRequests ProductRequest[]
+
+  @@map("users")
+}
+
+model Product {
+  id              String           @id(map: "Product_pkey") @default(uuid())
+  name            String
+  price           Float
+  expiryDate      DateTime?
+  createdAt       DateTime         @default(now())
+  inventories     Inventory[]
+  productRequests ProductRequest[]
+  sales           Sale[]
+
+  @@map("products")
+}
+
+model Inventory {
+  id        String            @id(map: "Inventory_pkey") @default(uuid())
+  productId String
+  quantity  Int
+  inStock   Boolean
+  location  InventoryLocation @default(STOCK)
+  product   Product           @relation(fields: [productId], references: [id], map: "Inventory_productId_fkey")
+
+  @@map("inventory")
+}
+
+model ProductRequest {
+  id          String        @id(map: "ProductRequest_pkey") @default(uuid())
+  productId   String
+  quantity    Int
+  status      RequestStatus @default(PENDING)
+  requestedBy String
+  reviewedBy  String?
+  createdAt   DateTime      @default(now())
+  product     Product       @relation(fields: [productId], references: [id], map: "ProductRequest_productId_fkey")
+  user        User          @relation(fields: [requestedBy], references: [id])
+
+  @@map("product_requests")
+}
+
+model Sale {
+  id        String   @id(map: "Sale_pkey") @default(uuid())
+  productId String
+  quantity  Int
+  total     Float
+  soldBy    String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], map: "Sale_productId_fkey")
+
+  @@map("sales")
+}
+
+enum Role {
+  OWNER
+  STOCK_MANAGER
+  SHOP_KEEPER
+}
+
+enum InventoryLocation {
+  STOCK
+  SHOP
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+}
