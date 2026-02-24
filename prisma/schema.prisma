@@ -12,6 +12,7 @@ model User {
   email           String           @unique(map: "User_email_key")
   password        String
   role            Role
+  isActive        Boolean          @default(true)
   createdAt       DateTime         @default(now())
   productRequests ProductRequest[]
 
