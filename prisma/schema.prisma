@@ -39,6 +39,7 @@ model Inventory {
   location  InventoryLocation @default(STOCK)
   product   Product           @relation(fields: [productId], references: [id], map: "Inventory_productId_fkey")
 
+  @@unique([productId, location])
   @@map("inventory")
 }
 
@@ -48,7 +49,7 @@ model ProductRequest {
   quantity    Int
   status      RequestStatus @default(PENDING)
   requestedBy String
-  reviewedBy  String?
+  fulFilledBy String?
   createdAt   DateTime      @default(now())
   product     Product       @relation(fields: [productId], references: [id], map: "ProductRequest_productId_fkey")
   user        User          @relation(fields: [requestedBy], references: [id])

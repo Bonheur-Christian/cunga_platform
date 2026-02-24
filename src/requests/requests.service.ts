@@ -6,7 +6,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductRequestDto } from './dto/create-request.dto';
 import { truncate } from 'node:fs';
-import { RequestStatus } from '@prisma/client';
+import { InventoryLocation, RequestStatus } from '@prisma/client';
 import { UUID } from 'node:crypto';
 
 @Injectable()
@@ -109,7 +109,7 @@ export class RequestsService {
 
   //Full fill the approved request and update inventory
 
-  async fullfillRequest(id: UUID) {
+  async fulfillRequest(id: UUID, fulFilledBy: UUID) {
     const request = await this.prisma.productRequest.findUnique({
       where: { id: id },
     });
@@ -118,10 +118,12 @@ export class RequestsService {
       throw new NotFoundException('Product request not found');
     }
 
+    if (request.status === 'FULFILLED') {
+      throw new BadRequestException('Request is already fulfilled');
+    }
+
     if (request.status !== RequestStatus.APPROVED) {
-      throw new BadRequestException(
-        'Only approved requests can be full filled',
-      );
+      throw new BadRequestException('Only approved requests can be fulfilled');
     }
 
     const inventory = await this.prisma.inventory.findFirst({
@@ -134,11 +136,13 @@ export class RequestsService {
       throw new NotFoundException('Product not found in inventory');
     }
 
+    //updating the status of the request and indicating who fulfilled it 
     const updatedRequest = await this.prisma.productRequest.update({
       where: { id: id },
-      data: { status: RequestStatus.FULFILLED },
+      data: { status: RequestStatus.FULFILLED, fulFilledBy: fulFilledBy },
     });
 
+    //update the inventory (default) to move the requested quantity
     await this.prisma.inventory.update({
       where: { id: inventory.id },
       data: {
@@ -146,8 +150,18 @@ export class RequestsService {
       },
     });
 
+    //Migrate the requested product to shop inventory
+    await this.prisma.inventory.create({
+      data: {
+        productId: request.productId,
+        quantity: request.quantity,
+        location: InventoryLocation.SHOP,
+        inStock: request.quantity > 0,
+      },
+    });
+
     return {
-      message: 'Product request full filled',
+      message: 'Product request fulfilled successfully',
       request: updatedRequest,
     };
   }

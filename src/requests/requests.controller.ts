@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   Patch,
   Post,
   Query,
@@ -19,6 +20,7 @@ import { Role } from 'generated/prisma/enums';
 import { Roles } from 'src/auth/decorators/role.decorator';
 import { RequestStatus } from '@prisma/client';
 import { UUID } from 'node:crypto';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('requests')
@@ -62,24 +64,21 @@ export class RequestsController {
     return this.requestsService.approveRejectRequest(id, status);
   }
 
-
   @ApiOperation({
     summary: 'Fulfill a product request only for Stock Manager',
   })
   @Roles(Role.STOCK_MANAGER)
   @Patch('/fulfill')
-  async fulfillRequest(@Query('id') id: any) {
-    return this.requestsService.fullfillRequest(id);
+  async fulfillRequest(@Query('id') id: any, @GetUser('userId') fulFilledBy: any) {
+    return this.requestsService.fulfillRequest(id, fulFilledBy);
   }
-
-
 
   //Delete Request
 
   @ApiOperation({ summary: 'Delete a product request only shop keeper' })
   @Roles(Role.SHOP_KEEPER)
-  @Delete('/delete')
-  async deleteProductRequest(@Query('id') id: any) {
+  @Delete('/delete/:id')
+  async deleteProductRequest(@Param('id') id: any) {
     return this.requestsService.deleteProductRequest(id);
   }
 }
