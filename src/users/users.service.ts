@@ -10,10 +10,15 @@ import * as bcrypt from 'bcrypt';
 import { UpdateUserDTO } from './dto/update-user.dto';
 import { InviteUserDTO } from './dto/invite-user.dto';
 import * as nodemailer from 'nodemailer';
+import { UpdateUserProfileDTO } from './dto/update-userprofile.dto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   //create user function
   // async createUser(createUserDto: CreateUserDto) {
@@ -65,35 +70,9 @@ export class UsersService {
       },
     });
 
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: true, // false if using 587
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      // tls: {
-      //   rejectUnauthorized: false, // allows self-signed certificates, sometimes necessary
-      // },
-    });
+    const loginUrl = 'https://your-cunga-app-url.com/login'; //login Link
 
-    // await transporter.sendMail({
-    //   from: process.env.SMTP_USER,
-    //   to: invitedUser.email,
-    //   subject: 'Welcome to Cunga!',
-    //   html: `
-    //     <h2>Welcome to Cunga!</h2>
-    //     <p>Your account has been created successfully.</p>
-    //     <p><strong>Default Password:</strong> ${generatedPassword}</p>
-    //     <p>Please login and change your password.</p>
-    //   `,
-    // });
-
-    const loginUrl = 'https://your-cunga-app-url.com/login'; // Add your actual login URL here
-
-    await transporter.sendMail({
-      from: `"Cunga Team" <${process.env.SMTP_USER}>`,
+    await this.mailService.sendMail({
       to: invitedUser.email,
       subject: 'You have been invited to join Cunga!',
       text: `Welcome to Cunga! Your account has been created. Your default password is: ${generatedPassword}. Please login at ${loginUrl} and change your password immediately.`, // Good practice to include a plain-text fallback
@@ -144,6 +123,11 @@ export class UsersService {
     </div>
   `,
     });
+
+    return {
+      message: 'User invited successfully and email sent',
+      user: new User(invitedUser),
+    };
   }
 
   //get user by id
@@ -183,6 +167,46 @@ export class UsersService {
     }
     //convert to User entities (which automatically excludes password when serialized)
     return usersData.map((user) => new User(user));
+  }
+
+  //update user profile
+  async updateUserProfile(id: string, dto: UpdateUserProfileDTO) {
+    const userData = await this.prisma.user.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: {
+        email: dto.email,
+      },
+    });
+
+    if (existingUser && existingUser.id !== id) {
+      throw new BadRequestException('Email already in use');
+    }
+
+    const updateData = { ...dto };
+    if (dto.password) {
+      updateData.password = await bcrypt.hash(dto.password, 15);
+    }
+
+    const updatedUserData = await this.prisma.user.update({
+      where: {
+        id: id,
+      },
+      data: updateData,
+    });
+
+    return {
+      message: 'User profile updated successfully',
+      user: new User(updatedUserData),
+    };
   }
 
   //update user by id

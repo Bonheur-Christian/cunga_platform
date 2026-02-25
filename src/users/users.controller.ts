@@ -17,6 +17,7 @@ import { RolesGuard } from 'src/auth/guards/role.guard';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { InviteUserDTO } from './dto/invite-user.dto';
+import { UpdateUserProfileDTO } from './dto/update-userprofile.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -54,6 +55,16 @@ export class UsersController {
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.usersService.getUserById(id);
+  }
+
+  //Update user profile data
+  @ApiOperation({ summary: 'Update user profile data' })
+  @Patch('/update/profile/:id')
+  async updateUserProfile(
+    @Param('id') id: string,
+    @Body() updateUserProfileDto: UpdateUserProfileDTO,
+  ) {
+    return this.usersService.updateUserProfile(id, updateUserProfileDto);
   }
 
   //update user by id
