@@ -137,6 +137,7 @@ export class UsersService {
         id: id,
       },
     });
+
     if (!userData) {
       throw new NotFoundException('User not found');
     }
@@ -151,6 +152,7 @@ export class UsersService {
         email: email,
       },
     });
+    
     if (!user) {
       throw new NotFoundException('User not found');
     }

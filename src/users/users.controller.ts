@@ -68,7 +68,8 @@ export class UsersController {
   }
 
   //update user by id
-  @ApiOperation({ summary: 'Update a user by its ID' })
+  @ApiOperation({ summary: 'Update a user by its ID (OWNER only)' })
+  @Roles(Role.OWNER)
   @Patch('/update/:id')
   async updateUserById(
     @Param('id') id: string,
