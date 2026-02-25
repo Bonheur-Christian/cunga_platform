@@ -94,6 +94,7 @@ export class RequestsService {
     };
 
     const isAllowed = allowedTransitions[request.status].includes(newStatus);
+    
 
     if (!isAllowed) {
       throw new BadRequestException(
