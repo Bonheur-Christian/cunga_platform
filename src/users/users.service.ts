@@ -40,7 +40,7 @@ export class UsersService {
   //     return new User(userData)
   // }
 
-  //invite user
+  //invite user only owner can invite user
 
   async inviteUser(inviteUserDto: InviteUserDTO) {
     const existingUser = await this.prisma.user.findUnique({
@@ -58,7 +58,7 @@ export class UsersService {
 
     const invitedUser = await this.prisma.user.create({
       data: {
-        name: inviteUserDto.name,
+        name: inviteUserDto.role,
         email: inviteUserDto.email,
         password: hashedPassword,
         role: inviteUserDto.role,
@@ -68,26 +68,81 @@ export class UsersService {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
-      secure: false, // true if using 465
+      secure: true, // false if using 587
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      tls: {
-        rejectUnauthorized: false, // allows self-signed certificates, sometimes necessary
-      },
+      // tls: {
+      //   rejectUnauthorized: false, // allows self-signed certificates, sometimes necessary
+      // },
     });
 
+    // await transporter.sendMail({
+    //   from: process.env.SMTP_USER,
+    //   to: invitedUser.email,
+    //   subject: 'Welcome to Cunga!',
+    //   html: `
+    //     <h2>Welcome to Cunga!</h2>
+    //     <p>Your account has been created successfully.</p>
+    //     <p><strong>Default Password:</strong> ${generatedPassword}</p>
+    //     <p>Please login and change your password.</p>
+    //   `,
+    // });
+
+    const loginUrl = 'https://your-cunga-app-url.com/login'; // Add your actual login URL here
+
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"Cunga Team" <${process.env.SMTP_USER}>`,
       to: invitedUser.email,
-      subject: 'Welcome to Cunga!',
+      subject: 'You have been invited to join Cunga!',
+      text: `Welcome to Cunga! Your account has been created. Your default password is: ${generatedPassword}. Please login at ${loginUrl} and change your password immediately.`, // Good practice to include a plain-text fallback
       html: `
-        <h2>Welcome to Cunga!</h2>
-        <p>Your account has been created successfully.</p>
-        <p><strong>Default Password:</strong> ${generatedPassword}</p>
-        <p>Please login and change your password.</p>
-      `,
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px 20px; color: #333333;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+        
+        <div style="background-color: #0056b3; padding: 30px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 1px;">Cunga</h1>
+        </div>
+        
+        <div style="padding: 40px 30px;">
+          <h2 style="margin-top: 0; font-size: 22px; color: #1a1a1a;">Welcome aboard!</h2>
+          <p style="font-size: 16px; line-height: 1.6; color: #555555;">
+            Owner has Invited you to joing the platform as ${invitedUser.role}.
+          </p>
+          
+          <div style="background-color: #f8f9fa; border-left: 4px solid #0056b3; padding: 15px 20px; margin: 25px 0; border-radius: 4px;">
+            <p style="margin: 0; font-size: 16px;">
+              <strong>Default Password:</strong> 
+              <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; letter-spacing: 1px;">${generatedPassword}</span>
+            </p>
+             <p style="margin: 0; font-size: 16px;">
+              <strong>Email:</strong> 
+              <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px; letter-spacing: 1px;">${invitedUser.email}</span>
+            </p>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #555555; font-weight: bold;">
+            Please log in now using the temporary password and change your credentials right after your first login to keep your account secure.
+          </p>
+          
+          <div style="text-align: center; margin: 35px 0 20px;">
+            <a href="${loginUrl}" style="background-color: #0056b3; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 5px; font-weight: bold; font-size: 16px; display: inline-block;">Log In to Cunga</a>
+          </div>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eeeeee;">
+          <p style="margin: 0; font-size: 12px; color: #999999;">
+            If you did not expect this email, please ignore it or contact our support team.
+          </p>
+          <p style="margin: 10px 0 0; font-size: 12px; color: #999999;">
+            &copy; ${new Date().getFullYear()} Cunga. All rights reserved.
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  `,
     });
   }
 
